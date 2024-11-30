@@ -14,6 +14,7 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'output'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-123')
 
 # Créer les dossiers nécessaires s'ils n'existent pas
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
