@@ -182,62 +182,55 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
-        return jsonify({'error': 'Aucun fichier n\'a été envoyé'}), 400
+        return jsonify({'success': False, 'error': 'Aucun fichier trouvé'})
     
     file = request.files['file']
     if file.filename == '':
-        return jsonify({'error': 'Aucun fichier sélectionné'}), 400
+        return jsonify({'success': False, 'error': 'Aucun fichier sélectionné'})
     
-    if file and allowed_file(file.filename):
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'error': 'Type de fichier non autorisé'})
+    
+    try:
+        # Sauvegarder le fichier Excel
         filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
+        excel_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(excel_path)
         
-        try:
-            # Lire le fichier Excel
-            wb = openpyxl.load_workbook(filepath, data_only=True)  # data_only=True pour obtenir les valeurs calculées
-            ws = wb.active
+        # Charger le workbook
+        wb = openpyxl.load_workbook(excel_path)
+        sheet = wb.active
+        
+        # Vérifier les en-têtes
+        headers = [cell.value for cell in sheet[1]]
+        if not all(col in headers for col in EXPECTED_COLUMNS):
+            return jsonify({'success': False, 'error': 'Format de fichier Excel invalide'})
+        
+        # Créer un PDF pour chaque ligne
+        pdf_files = []
+        for row in sheet.iter_rows(min_row=2):
+            # Extraire les données de la ligne
+            row_data = {EXPECTED_COLUMNS[i]: cell.value for i, cell in enumerate(row)}
             
-            # Vérifier les en-têtes
-            headers = [cell.value for cell in ws[1]]
-            if headers != EXPECTED_COLUMNS:
-                return jsonify({
-                    'error': 'Format de fichier incorrect. Les colonnes doivent être : ' + 
-                            ', '.join(EXPECTED_COLUMNS)
-                }), 400
+            # Générer un nom unique pour le PDF
+            pdf_filename = f"facture_{row_data['Facture Numero']}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+            pdf_path = os.path.join(app.config['OUTPUT_FOLDER'], pdf_filename)
             
-            # Générer les PDFs
-            generated_files = []
-            
-            # Pour chaque ligne de données
-            for row in ws.iter_rows(min_row=2):
-                # Créer un dictionnaire avec les données
-                data = {headers[i]: cell.value for i, cell in enumerate(row)}
-                
-                # Vérifier que toutes les données nécessaires sont présentes
-                if not all(data.values()):
-                    continue
-                
-                # Générer le nom du fichier PDF
-                output_filename = f"facture_{data['Facture Numero']}.pdf"
-                output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
-                
-                # Créer le PDF
-                create_invoice_pdf(data, output_path)
-                generated_files.append(output_filename)
-            
-            return jsonify({
-                'message': f'{len(generated_files)} facture(s) générée(s) avec succès',
-                'files': generated_files
-            })
-            
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-        finally:
-            # Nettoyer le fichier uploadé
-            os.remove(filepath)
-    
-    return jsonify({'error': 'Type de fichier non autorisé'}), 400
+            # Créer le PDF
+            create_invoice_pdf(row_data, pdf_path)
+            pdf_files.append(pdf_filename)
+        
+        # Nettoyer le fichier Excel
+        os.remove(excel_path)
+        
+        return jsonify({
+            'success': True,
+            'filename': pdf_files[0] if pdf_files else None,
+            'message': f'{len(pdf_files)} factures générées avec succès'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/download/<filename>')
 def download_file(filename):
