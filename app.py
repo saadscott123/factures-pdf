@@ -198,34 +198,67 @@ def upload_file():
         file.save(excel_path)
         
         # Charger le workbook
-        wb = openpyxl.load_workbook(excel_path)
+        wb = openpyxl.load_workbook(excel_path, data_only=True)
         sheet = wb.active
         
         # Vérifier les en-têtes
-        headers = [cell.value for cell in sheet[1]]
-        if not all(col in headers for col in EXPECTED_COLUMNS):
-            return jsonify({'success': False, 'error': 'Format de fichier Excel invalide'})
+        headers = [str(cell.value).strip() if cell.value else '' for cell in sheet[1]]
+        
+        # Créer un dictionnaire de correspondance des colonnes
+        column_mapping = {}
+        for expected_col in EXPECTED_COLUMNS:
+            for i, header in enumerate(headers):
+                if header.lower() == expected_col.lower():
+                    column_mapping[expected_col] = i
+                    break
+        
+        # Vérifier si toutes les colonnes requises sont présentes
+        if len(column_mapping) != len(EXPECTED_COLUMNS):
+            missing_columns = set(EXPECTED_COLUMNS) - set(column_mapping.keys())
+            return jsonify({
+                'success': False, 
+                'error': f'Colonnes manquantes dans le fichier Excel: {", ".join(missing_columns)}'
+            })
         
         # Créer un PDF pour chaque ligne
         pdf_files = []
-        for row in sheet.iter_rows(min_row=2):
-            # Extraire les données de la ligne
-            row_data = {EXPECTED_COLUMNS[i]: cell.value for i, cell in enumerate(row)}
+        for row_idx, row in enumerate(sheet.iter_rows(min_row=2), 2):
+            # Extraire les données de la ligne en utilisant le mapping
+            row_data = {}
+            skip_row = False
             
-            # Vérifier si toutes les données nécessaires sont présentes
-            if not all(row_data.values()):
+            for col_name, col_idx in column_mapping.items():
+                value = row[col_idx].value
+                if value is None or value == '':
+                    skip_row = True
+                    break
+                row_data[col_name] = value
+            
+            if skip_row:
                 continue
-                
-            # Générer un nom unique pour le PDF
-            pdf_filename = f"facture_{row_data['Facture Numero']}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-            pdf_path = os.path.join(app.config['OUTPUT_FOLDER'], pdf_filename)
             
-            # Créer le PDF
-            create_invoice_pdf(row_data, pdf_path)
-            pdf_files.append(pdf_filename)
+            try:
+                # Générer un nom unique pour le PDF
+                invoice_num = str(row_data['Facture Numero']).strip()
+                pdf_filename = f"facture_{invoice_num}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+                pdf_path = os.path.join(app.config['OUTPUT_FOLDER'], pdf_filename)
+                
+                # Créer le PDF
+                create_invoice_pdf(row_data, pdf_path)
+                pdf_files.append(pdf_filename)
+                
+            except Exception as e:
+                print(f"Erreur lors de la génération de la facture à la ligne {row_idx}: {str(e)}")
+                continue
         
         # Nettoyer le fichier Excel
         os.remove(excel_path)
+        
+        if not pdf_files:
+            return jsonify({
+                'success': False,
+                'error': 'Aucune facture n\'a pu être générée. Vérifiez le format de vos données.'
+            })
         
         return jsonify({
             'success': True,
@@ -234,6 +267,8 @@ def upload_file():
         })
         
     except Exception as e:
+        if os.path.exists(excel_path):
+            os.remove(excel_path)
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/download/<filename>')
