@@ -212,6 +212,10 @@ def upload_file():
             # Extraire les données de la ligne
             row_data = {EXPECTED_COLUMNS[i]: cell.value for i, cell in enumerate(row)}
             
+            # Vérifier si toutes les données nécessaires sont présentes
+            if not all(row_data.values()):
+                continue
+                
             # Générer un nom unique pour le PDF
             pdf_filename = f"facture_{row_data['Facture Numero']}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
             pdf_path = os.path.join(app.config['OUTPUT_FOLDER'], pdf_filename)
@@ -225,7 +229,7 @@ def upload_file():
         
         return jsonify({
             'success': True,
-            'filename': pdf_files[0] if pdf_files else None,
+            'files': pdf_files,
             'message': f'{len(pdf_files)} factures générées avec succès'
         })
         

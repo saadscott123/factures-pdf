@@ -48,6 +48,12 @@
             <div id="fileList" class="mt-3">
                 <!-- La liste des fichiers sera affichée ici -->
             </div>
+
+            <div id="downloadAllContainer" class="mt-3 text-center" style="display: none;">
+                <button id="downloadAllBtn" class="btn btn-success">
+                    Télécharger toutes les factures
+                </button>
+            </div>
         </div>
     </div>
 
@@ -55,6 +61,9 @@
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
         const fileList = document.getElementById('fileList');
+        const downloadAllContainer = document.getElementById('downloadAllContainer');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        let generatedFiles = [];
 
         // Événements pour le drag & drop
         dropZone.addEventListener('dragover', (e) => {
@@ -83,6 +92,8 @@
         function handleFiles(files) {
             const fileList = document.getElementById('fileList');
             fileList.innerHTML = '';
+            downloadAllContainer.style.display = 'none';
+            generatedFiles = [];
             
             Array.from(files).forEach((file, index) => {
                 const fileDiv = document.createElement('div');
@@ -96,11 +107,12 @@
                     </div>
                 `;
                 fileList.appendChild(fileDiv);
-                uploadFile(file, fileDiv.querySelector('.progress-bar'));
+                uploadFile(file, fileDiv);
             });
         }
 
-        function uploadFile(file, progressBar) {
+        function uploadFile(file, fileDiv) {
+            const progressBar = fileDiv.querySelector('.progress-bar');
             const formData = new FormData();
             formData.append('file', file);
 
@@ -119,20 +131,47 @@
                 if (xhr.status === 200) {
                     const response = JSON.parse(xhr.responseText);
                     if (response.success) {
-                        progressBar.parentElement.parentElement.parentElement.className = 'alert alert-success mb-2';
-                        const downloadBtn = document.createElement('a');
-                        downloadBtn.href = `/download/${response.filename}`;
-                        downloadBtn.className = 'btn btn-primary btn-sm ms-2';
-                        downloadBtn.innerHTML = 'Télécharger PDF';
-                        progressBar.parentElement.parentElement.appendChild(downloadBtn);
+                        fileDiv.className = 'alert alert-success mb-2';
+                        const buttonsContainer = document.createElement('div');
+                        buttonsContainer.className = 'mt-2';
+                        
+                        response.files.forEach(filename => {
+                            generatedFiles.push(filename);
+                            const downloadBtn = document.createElement('a');
+                            downloadBtn.href = `/download/${filename}`;
+                            downloadBtn.className = 'btn btn-primary btn-sm me-2 mb-2';
+                            downloadBtn.innerHTML = `Télécharger ${filename}`;
+                            buttonsContainer.appendChild(downloadBtn);
+                        });
+                        
+                        fileDiv.appendChild(buttonsContainer);
+                        
+                        // Afficher le bouton "Télécharger tout" s'il y a des fichiers
+                        if (generatedFiles.length > 0) {
+                            downloadAllContainer.style.display = 'block';
+                        }
                     } else {
-                        progressBar.parentElement.parentElement.parentElement.className = 'alert alert-danger mb-2';
+                        fileDiv.className = 'alert alert-danger mb-2';
+                        fileDiv.innerHTML += `<div class="mt-2">Erreur: ${response.error}</div>`;
                     }
                 }
             };
 
             xhr.send(formData);
         }
+
+        // Gérer le téléchargement de toutes les factures
+        downloadAllBtn.addEventListener('click', () => {
+            generatedFiles.forEach(filename => {
+                const link = document.createElement('a');
+                link.href = `/download/${filename}`;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => {}, 100); // Petit délai entre les téléchargements
+            });
+        });
     </script>
 </body>
 </html>
