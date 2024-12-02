@@ -81,8 +81,8 @@ def create_invoice_pdf(data, output_path):
     c = canvas.Canvas(output_path, pagesize=A4)
     width, height = A4
 
-    # Ajouter plus d'espace en haut pour le papier à en-tête (4cm)
-    top_margin = height - 4*cm
+    # Augmenter considérablement l'espace en haut pour le papier à en-tête (8cm)
+    top_margin = height - 8*cm
 
     # En-tête de la facture
     c.setFont("Helvetica-Bold", 14)
