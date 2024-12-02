@@ -16,9 +16,9 @@ app.config['OUTPUT_FOLDER'] = 'output'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-123')
 
-# Créer les dossiers nécessaires s'ils n'existent pas
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
+# Création des dossiers s'ils n'existent pas
+for folder in ['uploads', 'output']:
+    os.makedirs(folder, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {'xlsx'}
 
