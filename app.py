@@ -31,9 +31,22 @@ EXPECTED_COLUMNS = [
     'Date de Retour',
     'Marque du Vehicule',
     'Matricule',
-    'Prix Total Ht',
-    'TVA',
-    'Prix TTC'
+    'Nombre de jours',
+    'Prix par jour HT',
+    'Prix location total HT',
+    'Surclassement HT',
+    'Sup 2eme Conducteur HT',
+    'Out of Hours HT',
+    'CDW HT',
+    'TPC HT',
+    'PAI HT',
+    'SUPER CDW HT',
+    'GPS HT',
+    'Siege Bebe HT',
+    'One Way HT',
+    'Total Location HT',
+    'TVA 20 %',
+    'TOTAL TTC'
 ]
 
 def allowed_file(filename):
@@ -54,125 +67,105 @@ def format_date(date_str):
 
 def format_amount(amount):
     """Formater un montant avec deux décimales"""
-    try:
-        return f"{float(amount):,.2f}".replace(",", " ").replace(".", ",")
-    except:
-        return str(amount)
+    if isinstance(amount, str):
+        # Supprimer les espaces et remplacer la virgule par un point
+        amount = amount.replace(' ', '').replace(',', '.')
+        try:
+            amount = float(amount)
+        except ValueError:
+            return "0,00"
+    return f"{float(amount):,.2f}".replace(",", " ").replace(".", ",")
 
 def create_invoice_pdf(data, output_path):
     """Créer une facture PDF avec les données fournies"""
-    # Création du document PDF
     c = canvas.Canvas(output_path, pagesize=A4)
     width, height = A4
 
-    # Ajout d'espace en haut pour le papier à en-tête (200 points = environ 7 cm)
-    top_margin = 200
+    # Ajouter de l'espace en haut pour le papier à en-tête
+    top_margin = height - 2*cm
 
-    # En-tête avec logo et informations de l'entreprise
-    c.setFont("Helvetica-Bold", 22)
-    c.drawString(50, height - (top_margin + 50), "FACTURE DE LOCATION")
+    # En-tête de la facture
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(30, top_margin, "FACTURE")
     
-    # Informations de l'entreprise (côté gauche)
-    c.setFont("Helvetica", 10)
-    c.drawString(50, height - (top_margin + 80), "7 RUE MOHAMED DIOURI ETG 3 N°149 CASABLANCA")
-    c.drawString(50, height - (top_margin + 95), "Tel : +212 5 22 54 00 22")
-    c.drawString(50, height - (top_margin + 110), "Capital : 7 000 000 DHS - RC : 309011 - I.F : 15186686")
-    c.drawString(50, height - (top_margin + 125), "Taxe Professionnelle : 33066321 - C.N.S.S : 4052594")
-    c.drawString(50, height - (top_margin + 140), "ICE : 0000 349 590 00014")
-    
-    # Cadre pour le numéro de facture (côté droit)
-    frame_x = 400
-    frame_y = height - (top_margin + 140)
-    frame_width = 150
-    frame_height = 90
-    
-    # Dessiner le cadre
-    c.rect(frame_x, frame_y, frame_width, frame_height)
-    
-    # Centrer le texte dans le cadre
-    c.setFont("Helvetica-Bold", 10)
-    
-    # Centrer "N° Facture"
-    facture_text = f"N° Facture: {data['Facture Numero']}"
-    facture_width = c.stringWidth(facture_text, "Helvetica-Bold", 10)
-    facture_x = frame_x + (frame_width - facture_width) / 2
-    facture_y = frame_y + frame_height - 30  # Position verticale ajustée
-    c.drawString(facture_x, facture_y, facture_text)
-    
-    # Centrer la date
-    date_text = f"Date: {format_date(data['Date de facture'])}"
-    date_width = c.stringWidth(date_text, "Helvetica-Bold", 10)
-    date_x = frame_x + (frame_width - date_width) / 2
-    date_y = frame_y + frame_height - 50  # Position verticale ajustée
-    c.drawString(date_x, date_y, date_text)
-    
-    # Informations client
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, height - (top_margin + 180), "FACTURER À:")
-    c.setFont("Helvetica", 10)
-    c.drawString(50, height - (top_margin + 200), f"{data['Client']}")
-    
-    # Informations de location
-    y = height - (top_margin + 250)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "INFORMATIONS DE LOCATION")
-    
-    # Tableau des informations
-    y -= 30
-    c.setFont("Helvetica", 10)
-    # Première ligne
-    c.drawString(50, y, "Date de départ:")
-    c.drawString(150, y, f"{format_date(data['Date de Depart'])}")
-    c.drawString(300, y, "Marque:")
-    c.drawString(400, y, f"{data['Marque du Vehicule']}")
-    
-    # Deuxième ligne
-    y -= 20
-    c.drawString(50, y, "Date de retour:")
-    c.drawString(150, y, f"{format_date(data['Date de Retour'])}")
-    c.drawString(300, y, "Matricule:")
-    c.drawString(400, y, f"{data['Matricule']}")
-    
-    # Tableau des prix
-    y -= 50
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "DÉTAIL DES PRIX")
-    
-    # En-têtes du tableau
-    y -= 30
-    c.setStrokeColor(colors.black)
-    c.setFillColor(colors.black)
-    c.rect(50, y - 20, 500, 30, fill=0)
-    
+    # Numéro de facture et date
+    c.setFont("Helvetica", 11)
+    c.drawString(400, top_margin, f"N° : {data['Facture Numero']}")
+    c.drawString(400, top_margin - 20, f"Date : {format_date(data['Date de facture'])}")
+
+    # Informations du client
+    c.drawString(30, top_margin - 60, "Client:")
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(30, top_margin - 80, str(data['Client']))
+
+    # Détails de la location
+    c.setFont("Helvetica", 11)
+    y = top_margin - 120
+    c.drawString(30, y, f"Véhicule : {data['Marque du Vehicule']}")
+    c.drawString(30, y - 20, f"Immatriculation : {data['Matricule']}")
+    c.drawString(30, y - 40, f"Période de location : Du {format_date(data['Date de Depart'])} au {format_date(data['Date de Retour'])}")
+    c.drawString(30, y - 60, f"Nombre de jours : {data['Nombre de jours']}")
+
+    # Tableau des prestations
+    y = y - 100
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(30, y, "Désignation")
+    c.drawString(450, y, "Montant HT")
+
     # Lignes du tableau
-    c.setFont("Helvetica", 10)
-    # Prix HT
-    c.drawString(60, y - 10, "Prix Total HT")
-    c.drawRightString(520, y - 10, f"{format_amount(data['Prix Total Ht'])} MAD")
+    c.setFont("Helvetica", 11)
+    y -= 25
     
-    # TVA
-    y -= 30
-    c.rect(50, y - 20, 500, 30, fill=0)
-    c.drawString(60, y - 10, "TVA")
-    c.drawRightString(520, y - 10, "20 %")
-    
-    # Prix TTC
-    y -= 30
-    c.rect(50, y - 20, 500, 30, fill=0)
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(60, y - 10, "Prix TTC")
-    c.drawRightString(520, y - 10, f"{format_amount(data['Prix TTC'])} MAD")
-    
+    # Location de base
+    c.drawString(30, y, f"Location véhicule ({data['Nombre de jours']} jours x {format_amount(data['Prix par jour HT'])} MAD)")
+    c.drawString(450, y, f"{format_amount(data['Prix location total HT'])} MAD")
+
+    # Options supplémentaires
+    options = [
+        ('Surclassement', 'Surclassement HT'),
+        ('Supplément 2ème conducteur', 'Sup 2eme Conducteur HT'),
+        ('Out of Hours', 'Out of Hours HT'),
+        ('CDW', 'CDW HT'),
+        ('TPC', 'TPC HT'),
+        ('PAI', 'PAI HT'),
+        ('SUPER CDW', 'SUPER CDW HT'),
+        ('GPS', 'GPS HT'),
+        ('Siège bébé', 'Siege Bebe HT'),
+        ('One Way', 'One Way HT')
+    ]
+
+    for label, key in options:
+        if float(str(data[key]).replace(' ', '').replace(',', '.') or 0) > 0:
+            y -= 20
+            c.drawString(30, y, label)
+            c.drawString(450, y, f"{format_amount(data[key])} MAD")
+
+    # Total HT, TVA et TTC
+    y -= 40
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(350, y, "Total HT")
+    c.drawString(450, y, f"{format_amount(data['Total Location HT'])} MAD")
+
+    y -= 20
+    c.drawString(350, y, "TVA 20 %")
+    c.drawString(450, y, f"{format_amount(data['TVA 20 %'])} MAD")
+
+    y -= 20
+    c.line(350, y + 15, 550, y + 15)  # Ligne de séparation
+    c.drawString(350, y, "Total TTC")
+    c.drawString(450, y, f"{format_amount(data['TOTAL TTC'])} MAD")
+
     # Pied de page
     c.setFont("Helvetica", 8)
-    footer_text1 = "PREPAID CAR RENTAL SARL AU - 7 RUE MOHAMED DIOURI ETG 3 N°149 CASABLANCA"
-    footer_text2 = "Tel : +212 5 22 54 00 22 - Capital : 7 000 000 DHS - RC : 309011 - I.F : 15186686"
-    footer_text3 = "Taxe Professionnelle : 33066321 - C.N.S.S : 4052594 - ICE : 0000 349 590 00014"
+    footer_text = [
+        "SARL au capital de 500 000,00 DH - RC: 123456 - IF: 123456789 - ICE: 001234567890123",
+        "Adresse: 123 Avenue Mohammed V, 20000 Casablanca, Maroc",
+        "Tél: +212 5 22 12 34 56 - Email: contact@location-voiture.ma"
+    ]
     
-    c.drawCentredString(width/2, 40, footer_text1)
-    c.drawCentredString(width/2, 30, footer_text2)
-    c.drawCentredString(width/2, 20, footer_text3)
-    
+    for i, text in enumerate(footer_text):
+        c.drawString(30, 30 + (i * 10), text)
+
     c.save()
 
 @app.route('/')
