@@ -159,8 +159,8 @@ def create_invoice_pdf(data, output_path):
     c.setFont("Helvetica", 8)
     footer_text = [
         "PREPAID CAR RENTAL S.A.R.L A.U, 7 RUE MOHAMED DIOURI ETG 3 N°149, CASABLANCA.",
-        "TEL : (+212) 5 22 54 00 22. Capital : 7 000 000 DHS - RC : 309011 - IF : 15186686.",
-        "Taxe Professionnelle : 33066321 - CNSS : 4052594 - ICE : 0000 349 590 00014."
+        "Taxe Professionnelle : 33066321 - CNSS : 4052594 - ICE : 0000 349 590 00014.",
+        "TEL : (+212) 5 22 54 00 22. Capital : 7 000 000 DHS - RC : 309011 - IF : 15186686."
     ]
     
     for i, text in enumerate(footer_text):
