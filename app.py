@@ -66,15 +66,17 @@ def format_date(date_str):
         return date_str
 
 def format_amount(amount):
-    """Formater un montant avec deux décimales"""
-    if isinstance(amount, str):
-        # Supprimer les espaces et remplacer la virgule par un point
-        amount = amount.replace(' ', '').replace(',', '.')
-        try:
-            amount = float(amount)
-        except ValueError:
-            return "0,00"
-    return f"{float(amount):,.2f}".replace(",", " ").replace(".", ",")
+    """Formater les montants avec deux décimales"""
+    if amount is None:
+        return "0,00"
+    try:
+        # Convertir en float si c'est une chaîne
+        if isinstance(amount, str):
+            amount = float(amount.replace(' ', '').replace(',', '.'))
+        # Formater avec deux décimales et remplacer le point par une virgule
+        return "{:,.2f}".format(amount).replace(',', ' ').replace('.', ',')
+    except (ValueError, TypeError):
+        return "0,00"
 
 def create_invoice_pdf(data, output_path):
     """Créer une facture PDF avec les données fournies"""
@@ -134,11 +136,11 @@ def create_invoice_pdf(data, output_path):
         ("One Way", "One Way HT")
     ]
 
+    # Afficher toutes les prestations, même celles à 0
     for label, key in prestations:
-        if data[key] and float(data[key]) != 0:
-            y -= 20
-            c.drawString(30, y, label)
-            c.drawString(450, y, f"{format_amount(data[key])} MAD")
+        y -= 20
+        c.drawString(30, y, label)
+        c.drawString(450, y, f"{format_amount(data[key])} MAD")
 
     # Total HT
     y -= 30
