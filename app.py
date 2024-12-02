@@ -158,19 +158,23 @@ def create_invoice_pdf(data, output_path):
     c.drawString(450, y, f"{format_amount(data['TOTAL TTC'])} MAD")
 
     # Pied de page centré avec plus d'espace en bas
-    c.setFont("Helvetica", 8)
+    c.setFont("Helvetica", 7)  # Réduire légèrement la taille de la police
     footer_text = [
-        "PREPAID CAR RENTAL S.A.R.L A.U, 7 RUE MOHAMED DIOURI ETG 3 N°149, CASABLANCA. Taxe Professionnelle : 33066321 - CNSS : 4052594 - ICE : 0000 349 590 00014.",
-        "TEL : (+212) 5 22 54 00 22. Capital : 7 000 000 DHS - RC : 309011 - IF : 15186686."
+        "PREPAID CAR RENTAL S.A.R.L A.U - 7 RUE MOHAMED DIOURI ETG 3 N°149, CASABLANCA - TP: 33066321 - CNSS: 4052594 - ICE: 000034959000014",
+        "TEL: (+212) 5 22 54 00 22 - Capital: 7 000 000 DHS - RC: 309011 - IF: 15186686"
     ]
     
     # Position de départ pour le pied de page (1.5cm du bas)
     footer_start_y = 1.5*cm
-    line_spacing = 12  # Espacement entre les lignes
+    line_spacing = 12
+    
+    # Ajouter des marges de sécurité (2cm de chaque côté)
+    margin = 2*cm
+    page_width = width - (2 * margin)
     
     for i, text in enumerate(footer_text):
-        text_width = c.stringWidth(text, "Helvetica", 8)
-        x = (width - text_width) / 2
+        text_width = c.stringWidth(text, "Helvetica", 7)
+        x = margin + (page_width - text_width) / 2
         c.drawString(x, footer_start_y + (i * line_spacing), text)
 
     c.save()
