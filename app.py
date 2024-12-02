@@ -81,8 +81,8 @@ def create_invoice_pdf(data, output_path):
     c = canvas.Canvas(output_path, pagesize=A4)
     width, height = A4
 
-    # Ajouter de l'espace en haut pour le papier à en-tête
-    top_margin = height - 2*cm
+    # Ajouter plus d'espace en haut pour le papier à en-tête (4cm)
+    top_margin = height - 4*cm
 
     # En-tête de la facture
     c.setFont("Helvetica-Bold", 14)
@@ -155,7 +155,7 @@ def create_invoice_pdf(data, output_path):
     c.drawString(350, y, "Total TTC")
     c.drawString(450, y, f"{format_amount(data['TOTAL TTC'])} MAD")
 
-    # Pied de page
+    # Pied de page centré avec plus d'espace en bas (3cm du bas)
     c.setFont("Helvetica", 8)
     footer_text = [
         "PREPAID CAR RENTAL S.A.R.L A.U, 7 RUE MOHAMED DIOURI ETG 3 N°149, CASABLANCA.",
@@ -163,8 +163,16 @@ def create_invoice_pdf(data, output_path):
         "TEL : (+212) 5 22 54 00 22. Capital : 7 000 000 DHS - RC : 309011 - IF : 15186686."
     ]
     
+    # Position de départ pour le pied de page (3cm du bas)
+    footer_start_y = 3*cm
+    
     for i, text in enumerate(footer_text):
-        c.drawString(30, 30 + (i * 10), text)
+        # Calculer la largeur du texte pour le centrage
+        text_width = c.stringWidth(text, "Helvetica", 8)
+        # Calculer la position x pour centrer le texte
+        x = (width - text_width) / 2
+        # Dessiner le texte centré
+        c.drawString(x, footer_start_y + (i * 10), text)
 
     c.save()
 
