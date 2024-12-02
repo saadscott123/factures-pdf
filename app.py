@@ -108,54 +108,56 @@ def create_invoice_pdf(data, output_path):
 
     # Tableau des prestations
     y = y - 100
-    c.setFont("Helvetica-Bold", 11)
+    c.setFont("Helvetica", 10)
+    
+    # Première ligne du tableau
     c.drawString(30, y, "Désignation")
     c.drawString(450, y, "Montant HT")
+    y -= 20
+    c.line(30, y + 15, 550, y + 15)  # Ligne de séparation
 
-    # Lignes du tableau
-    c.setFont("Helvetica", 11)
-    y -= 25
-    
-    # Location de base
-    c.drawString(30, y, f"Location véhicule ({data['Nombre de jours']} jours x {format_amount(data['Prix par jour HT'])} MAD)")
+    # Prix de location
+    c.drawString(30, y, "Prix location")
     c.drawString(450, y, f"{format_amount(data['Prix location total HT'])} MAD")
-
-    # Options supplémentaires
-    options = [
-        ('Surclassement', 'Surclassement HT'),
-        ('Supplément 2ème conducteur', 'Sup 2eme Conducteur HT'),
-        ('Out of Hours', 'Out of Hours HT'),
-        ('CDW', 'CDW HT'),
-        ('TPC', 'TPC HT'),
-        ('PAI', 'PAI HT'),
-        ('SUPER CDW', 'SUPER CDW HT'),
-        ('GPS', 'GPS HT'),
-        ('Siège bébé', 'Siege Bebe HT'),
-        ('One Way', 'One Way HT')
+    
+    # Autres prestations
+    prestations = [
+        ("Surclassement", "Surclassement HT"),
+        ("2ème Conducteur", "Sup 2eme Conducteur HT"),
+        ("Out of Hours", "Out of Hours HT"),
+        ("CDW", "CDW HT"),
+        ("TPC", "TPC HT"),
+        ("PAI", "PAI HT"),
+        ("SUPER CDW", "SUPER CDW HT"),
+        ("GPS", "GPS HT"),
+        ("Siège Bébé", "Siege Bebe HT"),
+        ("One Way", "One Way HT")
     ]
 
-    for label, key in options:
-        if float(str(data[key]).replace(' ', '').replace(',', '.') or 0) > 0:
+    for label, key in prestations:
+        if data[key] and float(data[key]) != 0:
             y -= 20
             c.drawString(30, y, label)
             c.drawString(450, y, f"{format_amount(data[key])} MAD")
 
-    # Total HT, TVA et TTC
-    y -= 40
-    c.setFont("Helvetica-Bold", 11)
-    c.drawString(350, y, "Total HT")
-    c.drawString(450, y, f"{format_amount(data['Total Location HT'])} MAD")
+    # Total HT
+    y -= 30
+    c.line(350, y + 25, 550, y + 25)  # Ligne de séparation
+    c.drawString(350, y + 10, "Total HT")
+    c.drawString(450, y + 10, f"{format_amount(data['Total Location HT'])} MAD")
 
+    # TVA
     y -= 20
-    c.drawString(350, y, "TVA 20 %")
+    c.drawString(350, y, "TVA 20%")
     c.drawString(450, y, f"{format_amount(data['TVA 20 %'])} MAD")
 
+    # Total TTC
     y -= 20
     c.line(350, y + 15, 550, y + 15)  # Ligne de séparation
     c.drawString(350, y, "Total TTC")
     c.drawString(450, y, f"{format_amount(data['TOTAL TTC'])} MAD")
 
-    # Pied de page centré avec plus d'espace en bas (3cm du bas)
+    # Pied de page centré avec plus d'espace en bas
     c.setFont("Helvetica", 8)
     footer_text = [
         "PREPAID CAR RENTAL S.A.R.L A.U, 7 RUE MOHAMED DIOURI ETG 3 N°149, CASABLANCA.",
@@ -163,16 +165,14 @@ def create_invoice_pdf(data, output_path):
         "TEL : (+212) 5 22 54 00 22. Capital : 7 000 000 DHS - RC : 309011 - IF : 15186686."
     ]
     
-    # Position de départ pour le pied de page (3cm du bas)
-    footer_start_y = 3*cm
+    # Position de départ pour le pied de page (2cm du bas)
+    footer_start_y = 2*cm
+    line_spacing = 12  # Augmenter l'espacement entre les lignes
     
     for i, text in enumerate(footer_text):
-        # Calculer la largeur du texte pour le centrage
         text_width = c.stringWidth(text, "Helvetica", 8)
-        # Calculer la position x pour centrer le texte
         x = (width - text_width) / 2
-        # Dessiner le texte centré
-        c.drawString(x, footer_start_y + (i * 10), text)
+        c.drawString(x, footer_start_y + (i * line_spacing), text)
 
     c.save()
 
